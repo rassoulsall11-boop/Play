@@ -1,39 +1,3 @@
-import customtkinter as ctk
-import re
-import ollama
-import threading
-import socket
-import os
-import json
-from datetime import datetime
-from tkinter import filedialog, messagebox
-
-# --- CONFIGURATION DU DESIGN ---
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("green")
-
-class CyberStationElitePro(ctk.CTk):
-    def __init__(self):
-        super().__init__()
-
-        # Configuration fenêtre
-        self.title("⚡ CYBER-STATION ELITE v4.0 - CERTIFIED ENGINEER EDITION ⚡")
-        self.geometry("1200x900")
-        
-        # Initialisation du système de fichiers
-        self.setup_environment()
-
-        # Variables de contrôle
-        self.is_processing = False
-        self.current_mode = ctk.StringVar(value="RED TEAM (OFFENSIF)")
-        self.last_ai_response = ""
-
-        # --- LAYOUT PRINCIPAL ---
-        self.grid_columnconfigure(1, weight=1)
-        self.grid_rowconfigure(0, weight=1)
-
-        # --- SIDEBAR ---
-        self.sidebar = ctk.CTkFrame(self, width=220, corner_radius=0, fg_color="#050505")
         self.sidebar.grid(row=0, column=0, sticky="nsew")
         
         self.logo_label = ctk.CTkLabel(self.sidebar, text="CYBER\nCORE v4", font=("Orbitron", 28, "bold"), text_color="#00FF00")

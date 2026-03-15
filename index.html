@@ -1,1 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Vortex - CrazyGames Edition</title>
+    <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background: #050505; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: white; }
+        canvas { display: block; }
+        #ui { position: absolute; top: 10px; left: 10px; pointer-events: none; }
+        .stat { margin-bottom: 5px; background: rgba(0, 0, 0, 0.5); padding: 5px 10px; border-radius: 5px; border-left: 3px solid #00f2ff; }
+        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: rgba(0, 0, 0, 0.8); padding: 30px; border-radius: 15px; border: 2px solid #00f2ff; box-shadow: 0 0 20px #00f2ff; }
+        button { background: #00f2ff; border: none; padding: 15px 40px; font-size: 20px; font-weight: bold; color: black; border-radius: 30px; cursor: pointer; transition: 0.3s; margin-top: 20px; }
+        button:hover { background: #0088ff; transform: scale(1.1); box-shadow: 0 0 15px #0088ff; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div class="stat">SCORE: <span id="score">0</span></div>
+        <div class="stat">RECORD: <span id="highscore">0</span></div>
+    </div>
+    <div id="menu">
+        <h1>NEON VORTEX</h1>
+        <button id="startBtn">JOUER</button>
+    </div>
+    <canvas id="gameCanvas"></canvas>
 
+    <script>
+        // 2. INITIALISATION DU SDK
+        const sdk = window.CrazyGames.SDK;
+        
+        async function setupSDK() {
+            try {
+                await sdk.init();
+                console.log("CrazyGames SDK Initialisé !");
+            } catch (e) {
+                console.error("Erreur SDK:", e);
+            }
+        }
+        setupSDK();
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const menu = document.getElementById('menu');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let gameActive = false;
+        let score = 0;
+
+        function startGame() {
+            // 3. APPEL DE LA PUBLICITÉ AU LANCEMENT
+            console.log("Demande de publicité...");
+            sdk.ad.requestAd("midroll", {
+                adStarted: () => { console.log("Pub lancée"); },
+                adFinished: () => { console.log("Pub finie"); startActualGame(); },
+                adError: (error) => { console.log("Erreur pub:", error); startActualGame(); }
+            });
+        }
+
+        function startActualGame() {
+            menu.style.display = 'none';
+            gameActive = true;
+            score = 0;
+            animate();
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Ici ton code de dessin du jeu...
+            ctx.fillStyle = '#00f2ff';
+            ctx.fillText("Jeu en cours...", canvas.width/2 - 50, canvas.height/2);
+            requestAnimationFrame(animate);
+        }
+
+        startBtn.addEventListener('click', startGame);
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>

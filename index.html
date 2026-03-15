@@ -1,89 +1,434 @@
+```html
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Vortex - CrazyGames Edition</title>
-    <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Project: TEYVAT - WebGL Synthesis</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #050505; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: white; }
-        canvas { display: block; }
-        #ui { position: absolute; top: 10px; left: 10px; pointer-events: none; }
-        .stat { margin-bottom: 5px; background: rgba(0, 0, 0, 0.5); padding: 5px 10px; border-radius: 5px; border-left: 3px solid #00f2ff; }
-        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: rgba(0, 0, 0, 0.8); padding: 30px; border-radius: 15px; border: 2px solid #00f2ff; box-shadow: 0 0 20px #00f2ff; }
-        button { background: #00f2ff; border: none; padding: 15px 40px; font-size: 20px; font-weight: bold; color: black; border-radius: 30px; cursor: pointer; transition: 0.3s; margin-top: 20px; }
-        button:hover { background: #0088ff; transform: scale(1.1); box-shadow: 0 0 15px #0088ff; }
-    </style>
-</head>
-<body>
-    <div id="ui">
-        <div class="stat">SCORE: <span id="score">0</span></div>
-        <div class="stat">RECORD: <span id="highscore">0</span></div>
-    </div>
-    <div id="menu">
-        <h1>NEON VORTEX</h1>
-        <button id="startBtn">JOUER</button>
-    </div>
-    <canvas id="gameCanvas"></canvas>
+        :root {
+            --genshin-ui-bg: rgba(30, 34, 43, 0.7);
+            --genshin-ui-border: rgba(255, 255, 255, 0.2);
+            --genshin-health: #96E066;
+            --genshin-stamina: #FFD235;
+            --anemo-color: #55E4B0;
+        }
 
-    <script>
-        // 2. INITIALISATION DU SDK
-        const sdk = window.CrazyGames.SDK;
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        body { overflow: hidden; background-color: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        #game-canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+
+        /* AAA HUD OVERLAY */
+        #hud { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10; pointer-events: none; }
         
-        async function setupSDK() {
-            try {
-                await sdk.init();
-                console.log("CrazyGames SDK Initialisé !");
-            } catch (e) {
-                console.error("Erreur SDK:", e);
+        /* Minimap */
+        .minimap-container {
+            position: absolute; top: 20px; left: 20px;
+            width: 150px; height: 150px;
+            border-radius: 50%;
+            border: 2px solid var(--genshin-ui-border);
+            background: rgba(10, 15, 20, 0.6);
+            backdrop-filter: blur(10px);
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        .minimap-player { width: 10px; height: 10px; background: var(--anemo-color); border-radius: 50%; box-shadow: 0 0 10px var(--anemo-color); }
+
+        /* Character Status */
+        .status-container { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 400px; display: flex; flex-direction: column; gap: 8px; }
+        .bar-bg { width: 100%; height: 6px; background: rgba(0,0,0,0.5); border-radius: 4px; overflow: hidden; border: 1px solid var(--genshin-ui-border); }
+        .health-fill { width: 100%; height: 100%; background: var(--genshin-health); transition: width 0.1s linear; box-shadow: 0 0 8px var(--genshin-health); }
+        .stamina-fill { width: 100%; height: 100%; background: var(--genshin-stamina); transition: width 0.1s linear; box-shadow: 0 0 8px var(--genshin-stamina); }
+
+        /* Skills UI */
+        .skills-container { position: absolute; bottom: 30px; right: 40px; display: flex; gap: 15px; align-items: flex-end; }
+        .skill-btn {
+            width: 60px; height: 60px; border-radius: 50%;
+            background: var(--genshin-ui-bg); border: 1px solid var(--genshin-ui-border);
+            display: flex; justify-content: center; align-items: center; color: white; font-weight: bold;
+            backdrop-filter: blur(5px); box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            position: relative; transition: transform 0.1s;
+        }
+        .skill-btn.burst { width: 80px; height: 80px; border-color: var(--anemo-color); box-shadow: 0 0 20px rgba(85, 228, 176, 0.4); }
+        .key-bind { position: absolute; top: -10px; right: -5px; background: #fff; color: #000; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 800; }
+
+        /* Crosshair & Instructions */
+        .crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%, -50%); }
+        .instructions { position: absolute; top: 20px; right: 20px; color: white; text-align: right; text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-size: 14px; line-height: 1.6; }
+
+        /* Loading Screen */
+        #loader {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #ffffff; z-index: 100; display: flex; justify-content: center; align-items: center;
+            flex-direction: column; transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .loader-logo { width: 100px; height: 100px; border: 4px solid #ddd; border-top-color: var(--anemo-color); border-radius: 50%; animation: spin 1s linear infinite; }
+        .loader-text { margin-top: 20px; font-weight: 300; letter-spacing: 4px; color: #333; font-size: 18px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+    <!-- Import Maps for Three.js ES Modules -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
             }
         }
-        setupSDK();
-
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const startBtn = document.getElementById('startBtn');
-        const menu = document.getElementById('menu');
-
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        let gameActive = false;
-        let score = 0;
-
-        function startGame() {
-            // 3. APPEL DE LA PUBLICITÉ AU LANCEMENT
-            console.log("Demande de publicité...");
-            sdk.ad.requestAd("midroll", {
-                adStarted: () => { console.log("Pub lancée"); },
-                adFinished: () => { console.log("Pub finie"); startActualGame(); },
-                adError: (error) => { console.log("Erreur pub:", error); startActualGame(); }
-            });
-        }
-
-        function startActualGame() {
-            menu.style.display = 'none';
-            gameActive = true;
-            score = 0;
-            animate();
-        }
-
-        function animate() {
-            if (!gameActive) return;
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // Ici ton code de dessin du jeu...
-            ctx.fillStyle = '#00f2ff';
-            ctx.fillText("Jeu en cours...", canvas.width/2 - 50, canvas.height/2);
-            requestAnimationFrame(animate);
-        }
-
-        startBtn.addEventListener('click', startGame);
-
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
     </script>
-</body>
-</html>
+</head>
+<body>
+    <div id="loader">
+        <div class="loader-logo"></div>
+        <div class="loader-text">INITIALIZING TEYVAT PROTOCOL</div>
+    </div>
+
+    <div id="hud">
+        <div class="minimap-container"><div class="minimap-player" id="minimap-dot"></div></div>
+        <div class="instructions">
+            <strong>[CLICK]</strong> Lock Mouse<br>
+            <strong>[W A S D]</strong> Move<br>
+            <strong>[SPACE]</strong> Jump<br>
+            <strong>[SHIFT]</strong> Dash<br>
+            <strong>[E]</strong> Elemental Skill<br>
+            <strong>[Q]</strong> Elemental Burst
+        </div>
+        <div class="crosshair"></div>
+        <div class="status-container">
+            <div class="bar-bg"><div class="health-fill" id="hp-bar"></div></div>
+            <div class="bar-bg"><div class="stamina-fill" id="stamina-bar"></div></div>
+        </div>
+        <div class="skills-container">
+            <div class="skill-btn"><span class="key-bind">E</span>Skill</div>
+            <div class="skill-btn burst"><span class="key-bind">Q</span>Burst</div>
+            <div class="skill-btn"><span class="key-bind">LMB</span>Atk</div>
+        </div>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
+
+        /**
+         * NEXUS ARCHITECT V4.0
+         * ENTERPRISE-GRADE 3D ENGINE WRAPPER (ECS-LITE ARCHITECTURE)
+         * Optimized for modern WebGL2, O(1) state lookups, Instanced Rendering.
+         */
+
+        // --- GLOBAL CONSTANTS & CONFIG ---
+        const CONFIG = {
+            GRAVITY: -35,
+            PLAYER_SPEED: 12,
+            PLAYER_DASH_MULTIPLIER: 2.2,
+            JUMP_FORCE: 15,
+            CHUNK_SIZE: 500,
+            WORLD_SEED: Math.random()
+        };
+
+        // --- UTILITIES ---
+        const generateToonGradient = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 4; canvas.height = 1;
+            const context = canvas.getContext('2d');
+            context.fillStyle = '#222222'; context.fillRect(0, 0, 1, 1); // Shadow
+            context.fillStyle = '#666666'; context.fillRect(1, 0, 1, 1); // Midtone
+            context.fillStyle = '#cccccc'; context.fillRect(2, 0, 1, 1); // Base
+            context.fillStyle = '#ffffff'; context.fillRect(3, 0, 1, 1); // Highlight
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.minFilter = THREE.NearestFilter;
+            texture.magFilter = THREE.NearestFilter;
+            return texture;
+        };
+
+        const toonTexture = generateToonGradient();
+
+        // --- PROCEDURAL ENVIRONMENT ENGINE ---
+        class TerrainManager {
+            constructor(scene) {
+                this.scene = scene;
+                this.noise = new SimplexNoise();
+                this.geometry = new THREE.PlaneGeometry(CONFIG.CHUNK_SIZE, CONFIG.CHUNK_SIZE, 128, 128);
+                this.geometry.rotateX(-Math.PI / 2);
+                
+                this.material = new THREE.MeshToonMaterial({ 
+                    color: 0x6bb845, 
+                    gradientMap: toonTexture,
+                    side: THREE.FrontSide
+                });
+
+                this.applyNoise();
+                this.mesh = new THREE.Mesh(this.geometry, this.material);
+                this.mesh.receiveShadow = true;
+                this.scene.add(this.mesh);
+
+                this.populateInstancedFoliage();
+            }
+
+            applyNoise() {
+                const positions = this.geometry.attributes.position;
+                for (let i = 0; i < positions.count; i++) {
+                    const x = positions.getX(i);
+                    const z = positions.getZ(i);
+                    // Fractal brownian motion (fBm) for realistic hills
+                    let y = this.noise.noise(x * 0.005, z * 0.005) * 15;
+                    y += this.noise.noise(x * 0.02, z * 0.02) * 5;
+                    positions.setY(i, Math.max(-5, y));
+                }
+                this.geometry.computeVertexNormals();
+            }
+
+            getHeightAt(x, z) {
+                // Approximated height check for physics
+                let y = this.noise.noise(x * 0.005, z * 0.005) * 15;
+                y += this.noise.noise(x * 0.02, z * 0.02) * 5;
+                return Math.max(-5, y);
+            }
+
+            populateInstancedFoliage() {
+                // Ultra-optimized tree rendering using InstancedMesh
+                const treeCount = 1000;
+                const trunkGeo = new THREE.CylinderGeometry(0.5, 0.8, 4, 6);
+                const leavesGeo = new THREE.DodecahedronGeometry(3, 1);
+                
+                const trunkMat = new THREE.MeshToonMaterial({ color: 0x5c4033, gradientMap: toonTexture });
+                const leavesMat = new THREE.MeshToonMaterial({ color: 0x2e8b57, gradientMap: toonTexture });
+
+                this.treeTrunks = new THREE.InstancedMesh(trunkGeo, trunkMat, treeCount);
+                this.treeLeaves = new THREE.InstancedMesh(leavesGeo, leavesMat, treeCount);
+                
+                this.treeTrunks.castShadow = true;
+                this.treeLeaves.castShadow = true;
+
+                const dummy = new THREE.Object3D();
+                let index = 0;
+
+                for (let i = 0; i < treeCount; i++) {
+                    const x = (Math.random() - 0.5) * (CONFIG.CHUNK_SIZE - 20);
+                    const z = (Math.random() - 0.5) * (CONFIG.CHUNK_SIZE - 20);
+                    const y = this.getHeightAt(x, z);
+
+                    if (y > -2 && Math.random() > 0.3) { // Trees don't grow in deep valleys
+                        dummy.position.set(x, y + 2, z);
+                        const scale = 0.8 + Math.random() * 0.5;
+                        dummy.scale.set(scale, scale, scale);
+                        dummy.rotation.y = Math.random() * Math.PI;
+                        dummy.updateMatrix();
+
+                        this.treeTrunks.setMatrixAt(index, dummy.matrix);
+                        
+                        dummy.position.set(x, y + 5 * scale, z);
+                        dummy.updateMatrix();
+                        this.treeLeaves.setMatrixAt(index, dummy.matrix);
+                        
+                        index++;
+                    }
+                }
+
+                this.treeTrunks.count = index;
+                this.treeLeaves.count = index;
+                this.scene.add(this.treeTrunks);
+                this.scene.add(this.treeLeaves);
+            }
+        }
+
+        // --- VFX / PARTICLE SYSTEM ---
+        class VFXManager {
+            constructor(scene) {
+                this.scene = scene;
+                this.particles = [];
+            }
+
+            createAnemoBurst(origin) {
+                // Object pooling logic conceptualized here
+                const particleGeo = new THREE.PlaneGeometry(1, 1);
+                const particleMat = new THREE.MeshBasicMaterial({ 
+                    color: 0x55E4B0, 
+                    transparent: true, 
+                    opacity: 0.8,
+                    side: THREE.DoubleSide,
+                    blending: THREE.AdditiveBlending
+                });
+
+                for(let i=0; i<50; i++) {
+                    const mesh = new THREE.Mesh(particleGeo, particleMat);
+                    mesh.position.copy(origin);
+                    mesh.position.y += Math.random() * 2;
+                    
+                    // Velocity and lifecycle
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = Math.random() * 2 + 1;
+                    mesh.userData = {
+                        vel: new THREE.Vector3(Math.cos(angle)*radius, (Math.random()-0.5)*2, Math.sin(angle)*radius),
+                        life: 1.0,
+                        rotSpeed: (Math.random() - 0.5) * 0.5
+                    };
+                    
+                    this.scene.add(mesh);
+                    this.particles.push(mesh);
+                }
+            }
+
+            update(dt) {
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const p = this.particles[i];
+                    p.userData.life -= dt * 1.5;
+                    
+                    if (p.userData.life <= 0) {
+                        this.scene.remove(p);
+                        p.geometry.dispose();
+                        p.material.dispose();
+                        this.particles.splice(i, 1);
+                        continue;
+                    }
+
+                    // Swirl logic (Anemo effect)
+                    p.position.addScaledVector(p.userData.vel, dt * 5);
+                    p.position.y += dt * 2;
+                    p.rotation.z += p.userData.rotSpeed;
+                    p.material.opacity = p.userData.life;
+                    
+                    // Billboard to camera
+                    p.lookAt(gameEngine.camera.position);
+                }
+            }
+        }
+
+        // --- CHARACTER CONTROLLER (FSM Based) ---
+        class PlayerController {
+            constructor(scene, camera, terrain) {
+                this.scene = scene;
+                this.camera = camera;
+                this.terrain = terrain;
+                
+                // Physics State
+                this.position = new THREE.Vector3(0, 10, 0);
+                this.velocity = new THREE.Vector3();
+                this.isGrounded = false;
+                
+                // Character Stats
+                this.stamina = 100;
+                this.maxStamina = 100;
+                
+                // Input State
+                this.keys = { w: false, a: false, s: false, d: false, space: false, shift: false };
+                
+                // Camera Rig (Third Person Spring Arm)
+                this.cameraAngle = { theta: Math.PI / 4, phi: 0 };
+                this.cameraRadius = 8;
+                this.targetCameraRadius = 8;
+
+                this.buildCharacterAvatar();
+                this.bindInputs();
+            }
+
+            buildCharacterAvatar() {
+                this.avatar = new THREE.Group();
+                
+                // Main Body (Stylized)
+                const bodyGeo = new THREE.CapsuleGeometry(0.5, 1, 4, 8);
+                const bodyMat = new THREE.MeshToonMaterial({ color: 0xffffff, gradientMap: toonTexture });
+                this.mesh = new THREE.Mesh(bodyGeo, bodyMat);
+                this.mesh.position.y = 1;
+                this.mesh.castShadow = true;
+                this.avatar.add(this.mesh);
+
+                // Anemo Vision/Core
+                const coreGeo = new THREE.OctahedronGeometry(0.2);
+                const coreMat = new THREE.MeshBasicMaterial({ color: 0x55E4B0, wireframe: true });
+                this.core = new THREE.Mesh(coreGeo, coreMat);
+                this.core.position.set(0, 1.2, 0.4);
+                this.avatar.add(this.core);
+
+                this.scene.add(this.avatar);
+            }
+
+            bindInputs() {
+                window.addEventListener('keydown', (e) => {
+                    const key = e.key.toLowerCase();
+                    if(this.keys.hasOwnProperty(key)) this.keys[key] = true;
+                    if(e.key === 'Shift') this.keys.shift = true;
+                    if(key === 'e') this.castElementalSkill();
+                    if(key === 'q') this.castElementalBurst();
+                });
+
+                window.addEventListener('keyup', (e) => {
+                    const key = e.key.toLowerCase();
+                    if(this.keys.hasOwnProperty(key)) this.keys[key] = false;
+                    if(e.key === 'Shift') this.keys.shift = false;
+                });
+
+                document.body.addEventListener('click', () => {
+                    document.body.requestPointerLock();
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (document.pointerLockElement === document.body) {
+                        this.cameraAngle.phi -= e.movementX * 0.002;
+                        this.cameraAngle.theta -= e.movementY * 0.002;
+                        // Clamp vertical angle
+                        this.cameraAngle.theta = Math.max(0.1, Math.min(Math.PI - 0.1, this.cameraAngle.theta));
+                    }
+                });
+            }
+
+            castElementalSkill() {
+                gameEngine.vfx.createAnemoBurst(this.position);
+                // Impulse forward
+                const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0,1,0), this.cameraAngle.phi);
+                this.velocity.add(forward.multiplyScalar(20));
+            }
+
+            castElementalBurst() {
+                // Post-processing mock: Rapidly adjust ambient light to simulate dramatic darkening
+                gameEngine.dirLight.intensity = 0.1;
+                gameEngine.hemiLight.intensity = 0.2;
+                setTimeout(() => {
+                    gameEngine.dirLight.intensity = 1.5;
+                    gameEngine.hemiLight.intensity = 0.6;
+                }, 500);
+
+                // Massive AoE VFX
+                for(let i=0; i<5; i++) setTimeout(() => gameEngine.vfx.createAnemoBurst(this.position), i*100);
+            }
+
+            update(dt) {
+                // 1. Logic & Input processing
+                const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0,1,0), this.cameraAngle.phi);
+                const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0,1,0), this.cameraAngle.phi);
+                
+                const moveDir = new THREE.Vector3();
+                if (this.keys.w) moveDir.add(forward);
+                if (this.keys.s) moveDir.sub(forward);
+                if (this.keys.a) moveDir.sub(right);
+                if (this.keys.d) moveDir.add(right);
+                
+                moveDir.normalize();
+
+                // Sprint mechanic
+                let isSprinting = this.keys.shift && moveDir.lengthSq() > 0 && this.stamina > 0;
+                let currentSpeed = CONFIG.PLAYER_SPEED * (isSprinting ? CONFIG.PLAYER_DASH_MULTIPLIER : 1);
+
+                if (isSprinting) {
+                    this.stamina -= dt * 30;
+                    this.targetCameraRadius = 6; // Dynamic FOV/Zoom effect
+                } else {
+                    this.stamina = Math.min(this.maxStamina, this.stamina + dt * 15);
+                    this.targetCameraRadius = 8;
+                }
+                document.getElementById('stamina-bar').style.width = `${(this.stamina/this.maxStamina)*100}%`;
+
+                // Horizontal movement (friction applied if not moving)
+                if (moveDir.lengthSq() > 0) {
+                    this.velocity.x = moveDir.x * currentSpeed;
+                    this.velocity.z = moveDir.z * currentSpeed;
+                    
+                    // Rotate character mesh towards movement direction
+                    const targetAngle = Math.atan2(moveDir.x, moveDir.z);
+                    // Smooth rotation interpolation (Slerp-lite)
+                    const diff = targetAngle - this.avatar.rotation.y;
+                    this.avatar.rotation.y += Math.atan2(Math.sin(diff), Math.cos(diff)) * 10 * dt;
+                } else {
+                    this.velocity.x *= 0.8; // Ground friction
+                    this.velocity.z *= 0.8;
+           

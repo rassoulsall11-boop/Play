@@ -1,1 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon IA Gemini-Style</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #131314; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        #chat-container { width: 400px; height: 600px; background: #1e1f20; border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .message { padding: 10px 15px; border-radius: 15px; max-width: 80%; font-size: 14px; }
+        .user { background: #37393b; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .ai { background: #444746; align-self: flex-start; border-bottom-left-radius: 2px; color: #c4c7c5; }
+        #input-area { padding: 20px; display: flex; gap: 10px; border-top: 1px solid #333; }
+        input { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid #444; background: #131314; color: white; outline: none; }
+        button { background: #8ab4f8; border: none; padding: 10px 15px; border-radius: 50%; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
 
+<div id="chat-container">
+    <div id="messages">
+        <div class="message ai">Bonjour ! Je suis ton assistant. Comment puis-je t'aider aujourd'hui ?</div>
+    </div>
+    <div id="input-area">
+        <input type="text" id="userInput" placeholder="Écris ton message ici...">
+        <button onclick="sendMessage()">></button>
+    </div>
+</div>
+
+<script>
+    function sendMessage() {
+        const input = document.getElementById('userInput');
+        const text = input.value.trim();
+        if (text === "") return;
+
+        // Ajouter le message de l'utilisateur
+        addMessage(text, 'user');
+        input.value = "";
+
+        // Simuler une réponse de l'IA après 1 seconde
+        setTimeout(() => {
+            const response = "C'est une super question ! Pour que je puisse vraiment réfléchir, il faudrait me connecter à une API comme celle de Gemini.";
+            addMessage(response, 'ai');
+        }, 1000);
+    }
+
+    function addMessage(text, sender) {
+        const div = document.createElement('div');
+        div.className = `message ${sender}`;
+        div.innerText = text;
+        document.getElementById('messages').appendChild(div);
+        document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+    }
+</script>
+
+</body>
+</html>

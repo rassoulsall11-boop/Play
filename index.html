@@ -3,129 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Générateur de Code Pro</title>
+    <title>ProGen | Éditeur Live</title>
     <style>
-        /* DESIGN PROFESSIONNEL */
+        :root {
+            --bg-dark: #0d1117;
+            --panel-bg: #161b22;
+            --accent: #58a6ff;
+            --accent-hover: #1f6feb;
+            --text-main: #c9d1d9;
+            --border: #30363d;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
         }
 
         body {
-            background-color: #0f0f0f;
-            color: #e0e0e0;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
             height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
+        /* HEADER */
         header {
-            background-color: #1a1a1a;
-            padding: 12px 25px;
+            background-color: var(--panel-bg);
+            padding: 10px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #333;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            border-bottom: 1px solid var(--border);
+            z-index: 10;
         }
 
         .logo {
-            font-weight: 700;
-            letter-spacing: 1px;
-            font-size: 1.2rem;
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .logo span { color: #007acc; }
+        .logo span { color: var(--accent); }
 
-        .btn-group { display: flex; gap: 10px; }
+        .btn-group { display: flex; gap: 8px; }
 
         button {
-            background-color: #007acc;
-            color: white;
-            border: none;
-            padding: 8px 18px;
+            background-color: #21262d;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 6px 14px;
             cursor: pointer;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: background 0.2s;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
         }
 
-        button:hover { background-color: #005fa3; }
+        button:hover {
+            background-color: var(--border);
+            border-color: #8b949e;
+        }
 
-        .container {
+        button.primary {
+            background-color: #238636;
+            color: white;
+            border: none;
+        }
+
+        button.primary:hover { background-color: #2ea043; }
+
+        /* LAYOUT PRINCIPAL */
+        .main-container {
             display: flex;
             flex: 1;
-            gap: 2px;
-            background-color: #333; /* Séparateur visuel */
+            height: calc(100vh - 100px);
         }
 
         .panel {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background-color: #1e1e1e;
+            position: relative;
         }
 
-        .label {
-            background-color: #252526;
-            padding: 5px 15px;
+        .panel:first-child { border-right: 1px solid var(--border); }
+
+        .panel-header {
+            background-color: #0d1117;
+            padding: 8px 15px;
             font-size: 11px;
+            font-weight: 600;
+            color: #8b949e;
             text-transform: uppercase;
-            color: #888;
-            letter-spacing: 1px;
-            border-bottom: 1px solid #333;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
         }
 
+        /* EDITEUR */
         textarea {
             flex: 1;
-            background-color: #1e1e1e;
-            color: #d4d4d4;
+            background-color: var(--panel-bg);
+            color: #e6edf3;
             border: none;
-            padding: 20px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 15px;
-            line-height: 1.5;
+            padding: 15px;
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.6;
             resize: none;
             outline: none;
+            tab-size: 4;
         }
 
+        /* PREVIEW */
         iframe {
             flex: 1;
-            background-color: white;
+            background-color: white; /* Fond blanc par défaut pour l'aperçu */
             border: none;
+        }
+
+        /* FOOTER STATS */
+        footer {
+            background-color: var(--panel-bg);
+            padding: 4px 20px;
+            font-size: 11px;
+            color: #8b949e;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
         }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="logo">PRO<span>GEN</span></div>
+        <div class="logo">PRO<span>GEN</span> v2.0</div>
         <div class="btn-group">
+            <button onclick="copyCode()">Copier</button>
             <button onclick="clearCode()">Effacer</button>
-            <button onclick="downloadCode()">Télécharger .html</button>
+            <button class="primary" onclick="downloadCode()">Exporter HTML</button>
         </div>
     </header>
 
-    <main class="container">
+    <main class="main-container">
         <section class="panel">
-            <div class="label">Éditeur Source</div>
-            <textarea id="editor" spellcheck="false" placeholder=""></textarea>
+            <div class="panel-header">
+                <span>Éditeur Source</span>
+                <span id="char-count">0 caractères</span>
+            </div>
+            <textarea id="editor" spellcheck="false" autocomplete="off"></textarea>
         </section>
 
         <section class="panel">
-            <div class="label">Aperçu Live</div>
+            <div class="panel-header">Rendu Temps Réel</div>
             <iframe id="preview"></iframe>
         </section>
     </main>
 
+    <footer>
+        <div>Statut: <span style="color:#2ea043">● Synchronisé</span></div>
+        <div>HTML5 / CSS3 / JS supportés</div>
+    </footer>
+
     <script>
         const editor = document.getElementById('editor');
         const preview = document.getElementById('preview');
+        const charCount = document.getElementById('char-count');
 
-        // Met à jour l'aperçu en temps réel
+        // Gestion de l'aperçu
         function updatePreview() {
             const code = editor.value;
             const doc = preview.contentDocument || preview.contentWindow.document;
@@ -133,39 +185,79 @@
             doc.write(code);
             doc.close();
             
-            // Sauvegarde automatique dans le navigateur
-            localStorage.setItem('proGen_code', code);
+            localStorage.setItem('proGen_v2_code', code);
+            charCount.textContent = `${code.length} caractères`;
         }
 
-        // Chargement du code sauvegardé au démarrage
-        window.onload = () => {
-            const saved = localStorage.getItem('proGen_code');
-            if (saved) {
-                editor.value = saved;
-            } else {
-                // Code par défaut pour l'exemple
-                editor.value = "<html>\n<style>\n  body { display: grid; place-items: center; height: 90vh; color: #333; }\n  h1 { font-family: sans-serif; border-bottom: 3px solid gold; }\n</style>\n<body>\n  <h1>Hello World !</h1>\n</body>\n</html>";
+        // Support de la touche TAB dans le textarea
+        editor.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 4;
+                updatePreview();
             }
+        });
+
+        // Chargement initial
+        window.onload = () => {
+            const saved = localStorage.getItem('proGen_v2_code');
+            editor.value = saved || `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-family: system-ui;
+        }
+        .card {
+            background: rgba(255,255,255,0.1);
+            padding: 2rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>✨ Aperçu Stylé</h1>
+        <p>Modifiez le code à gauche pour voir la magie.</p>
+    </div>
+</body>
+</html>`;
             updatePreview();
         };
 
-        // Écouteur de saisie
         editor.addEventListener('input', updatePreview);
 
-        // Fonction pour effacer
         function clearCode() {
-            if(confirm("Effacer tout le code ?")) {
+            if(confirm("Tout supprimer ?")) {
                 editor.value = "";
                 updatePreview();
             }
         }
 
-        // Fonction pour télécharger le résultat
+        function copyCode() {
+            editor.select();
+            document.execCommand("copy");
+            alert("Code copié dans le presse-papier !");
+        }
+
         function downloadCode() {
             const blob = new Blob([editor.value], { type: "text/html" });
             const a = document.createElement("a");
             a.href = URL.createObjectURL(blob);
-            a.download = "mon-projet.html";
+            a.download = "index.html";
             a.click();
         }
     </script>

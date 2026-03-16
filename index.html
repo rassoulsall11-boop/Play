@@ -3,56 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon IA Gemini-Style</title>
+    <title>IA Locale 100% Privée</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #131314; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        #chat-container { width: 400px; height: 600px; background: #1e1f20; border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        #messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .message { padding: 10px 15px; border-radius: 15px; max-width: 80%; font-size: 14px; }
-        .user { background: #37393b; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .ai { background: #444746; align-self: flex-start; border-bottom-left-radius: 2px; color: #c4c7c5; }
-        #input-area { padding: 20px; display: flex; gap: 10px; border-top: 1px solid #333; }
-        input { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid #444; background: #131314; color: white; outline: none; }
-        button { background: #8ab4f8; border: none; padding: 10px 15px; border-radius: 50%; cursor: pointer; font-weight: bold; }
+        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; text-align: center; }
+        #chat-box { width: 80%; margin: auto; height: 300px; border: 1px solid #444; overflow-y: auto; padding: 15px; text-align: left; background: #1e1e1e; border-radius: 10px; }
+        #status { color: #8ab4f8; margin-bottom: 10px; font-size: 0.9em; }
+        input { width: 70%; padding: 10px; border-radius: 5px; border: none; margin-top: 10px; }
+        button { padding: 10px 20px; cursor: pointer; background: #8ab4f8; border: none; border-radius: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="chat-container">
-    <div id="messages">
-        <div class="message ai">Bonjour ! Je suis ton assistant. Comment puis-je t'aider aujourd'hui ?</div>
-    </div>
-    <div id="input-area">
-        <input type="text" id="userInput" placeholder="Écris ton message ici...">
-        <button onclick="sendMessage()">></button>
-    </div>
-</div>
+    <h2>IA Navigateur (Sans API)</h2>
+    <div id="status">Chargement du moteur...</div>
+    <div id="chat-box" id="display">Bienvenue. L'IA va se charger dans ton navigateur...</div>
+    
+    <input type="text" id="userInput" placeholder="Pose ta question...">
+    <button onclick="askIA()">Envoyer</button>
 
-<script>
-    function sendMessage() {
-        const input = document.getElementById('userInput');
-        const text = input.value.trim();
-        if (text === "") return;
+    <script type="module">
+        import * as webllm from "https://esm.run/@mlc-ai/web-llm";
 
-        // Ajouter le message de l'utilisateur
-        addMessage(text, 'user');
-        input.value = "";
+        const status = document.getElementById("status");
+        const chatBox = document.getElementById("chat-box");
+        let engine;
 
-        // Simuler une réponse de l'IA après 1 seconde
-        setTimeout(() => {
-            const response = "C'est une super question ! Pour que je puisse vraiment réfléchir, il faudrait me connecter à une API comme celle de Gemini.";
-            addMessage(response, 'ai');
-        }, 1000);
-    }
+        // Configuration du modèle (Llama-3 en version légère)
+        async function init() {
+            engine = await webllm.CreateMLCEngine("Llama-3-8B-Instruct-q4f32_1-MLC", {
+                initProgressCallback: (p) => { status.innerText = p.text; }
+            });
+            status.innerText = "IA Prête ! (Tourne sur ton GPU)";
+        }
 
-    function addMessage(text, sender) {
-        const div = document.createElement('div');
-        div.className = `message ${sender}`;
-        div.innerText = text;
-        document.getElementById('messages').appendChild(div);
-        document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
-    }
-</script>
+        window.askIA = async function() {
+            const input = document.getElementById("userInput").value;
+            chatBox.innerHTML += `<p><b>Toi:</b> ${input}</p>`;
+            
+            const reply = await engine.chat.completions.create({
+                messages: [{ role: "user", content: input }]
+            });
+            
+            chatBox.innerHTML += `<p><b>IA:</b> ${reply.choices[0].message.content}</p>`;
+            document.getElementById("userInput").value = "";
+        }
 
+        init();
+    </script>
 </body>
 </html>

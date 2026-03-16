@@ -3,52 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IA Locale 100% Privée</title>
+    <title>Ma Liste de Tâches</title>
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; text-align: center; }
-        #chat-box { width: 80%; margin: auto; height: 300px; border: 1px solid #444; overflow-y: auto; padding: 15px; text-align: left; background: #1e1e1e; border-radius: 10px; }
-        #status { color: #8ab4f8; margin-bottom: 10px; font-size: 0.9em; }
-        input { width: 70%; padding: 10px; border-radius: 5px; border: none; margin-top: 10px; }
-        button { padding: 10px 20px; cursor: pointer; background: #8ab4f8; border: none; border-radius: 5px; font-weight: bold; }
+        :root {
+            --primary: #6366f1;
+            --bg: #f8fafc;
+            --text: #1e293b;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            background: white;
+            width: 100%;
+            max-width: 450px;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+
+        h2 { margin-top: 0; color: var(--primary); }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        input[type="text"]:focus { border-color: var(--primary); }
+
+        button#add-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        ul { list-style: none; padding: 0; }
+
+        li {
+            background: #fff;
+            border-bottom: 1px solid #f1f5f9;
+            padding: 12px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+
+        li:hover { background: #fdfdfd; }
+
+        .task-text { flex-grow: 1; cursor: pointer; }
+
+        .completed {
+            text-decoration: line-through;
+            color: #94a3b8;
+        }
+
+        .delete-btn {
+            background: #fee2e2;
+            color: #ef4444;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 <body>
 
-    <h2>IA Navigateur (Sans API)</h2>
-    <div id="status">Chargement du moteur...</div>
-    <div id="chat-box" id="display">Bienvenue. L'IA va se charger dans ton navigateur...</div>
+<div class="container">
+    <h2>Mes Objectifs</h2>
     
-    <input type="text" id="userInput" placeholder="Pose ta question...">
-    <button onclick="askIA()">Envoyer</button>
+    <div class="input-group">
+        <input type="text" id="taskInput" placeholder="Ajouter une tâche...">
+        <button id="add-btn">Ajouter</button>
+    </div>
 
-    <script type="module">
-        import * as webllm from "https://esm.run/@mlc-ai/web-llm";
+    <ul id="taskList">
+        </ul>
+</div>
 
-        const status = document.getElementById("status");
-        const chatBox = document.getElementById("chat-box");
-        let engine;
+<script>
+    const input = document.getElementById('taskInput');
+    const addBtn = document.getElementById('add-btn');
+    const taskList = document.getElementById('taskList');
 
-        // Configuration du modèle (Llama-3 en version légère)
-        async function init() {
-            engine = await webllm.CreateMLCEngine("Llama-3-8B-Instruct-q4f32_1-MLC", {
-                initProgressCallback: (p) => { status.innerText = p.text; }
-            });
-            status.innerText = "IA Prête ! (Tourne sur ton GPU)";
-        }
+    function addTask() {
+        const text = input.value.trim();
+        if (text === "") return;
 
-        window.askIA = async function() {
-            const input = document.getElementById("userInput").value;
-            chatBox.innerHTML += `<p><b>Toi:</b> ${input}</p>`;
-            
-            const reply = await engine.chat.completions.create({
-                messages: [{ role: "user", content: input }]
-            });
-            
-            chatBox.innerHTML += `<p><b>IA:</b> ${reply.choices[0].message.content}</p>`;
-            document.getElementById("userInput").value = "";
-        }
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <span class="task-text">${text}</span>
+            <button class="delete-btn">Supprimer</button>
+        `;
 
-        init();
-    </script>
+        // Clic sur le texte pour barrer
+        li.querySelector('.task-text').addEventListener('click', function() {
+            this.classList.toggle('completed');
+        });
+
+        // Clic sur supprimer
+        li.querySelector('.delete-btn').addEventListener('click', function() {
+            li.remove();
+        });
+
+        taskList.appendChild(li);
+        input.value = "";
+    }
+
+    addBtn.addEventListener('click', addTask);
+
+    // Ajouter avec la touche "Entrée"
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') addTask();
+    });
+</script>
+
 </body>
 </html>
